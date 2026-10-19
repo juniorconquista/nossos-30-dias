@@ -8,26 +8,15 @@ As marcações ficam salvas no Firebase Firestore, no documento `casais/<código
 
 Se o `FB_CONFIG` no `index.html` estiver `null`, o site salva só no aparelho.
 
-## Como configurar o Firebase
+## Firebase
 
-1. Acesse https://console.firebase.google.com e crie um projeto (o Google Analytics pode ficar desligado).
-2. Vá em **Criação > Firestore Database > Criar banco de dados**, escolha a região `southamerica-east1` e o **modo de produção**.
-3. Na aba **Regras**, cole as regras abaixo e clique em **Publicar**:
+Projeto: `nossos-30-dias-4x73r` (plano gratuito Spark, sem cartão). Console: https://console.firebase.google.com/project/nossos-30-dias-4x73r/firestore
 
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /casais/{id} {
-         allow get, create, update: if id.size() >= 20;
-         allow list, delete: if false;
-       }
-     }
-   }
-   ```
+As regras de segurança ficam em `firestore.rules`. Para publicar uma mudança nelas:
 
-4. Clique na engrenagem e vá em **Configurações do projeto > Seus apps > ícone `</>` (Web)**. Registre o app sem ativar o Hosting e copie o objeto `firebaseConfig`.
-5. No `index.html`, troque `var FB_CONFIG=null;` por esse objeto. Os dados do `firebaseConfig` podem ficar no repositório público: eles só identificam o projeto, e quem protege os dados são as regras e o código do casal.
+```bash
+npx firebase-tools deploy --only firestore:rules
+```
 
 ## Primeiro uso
 

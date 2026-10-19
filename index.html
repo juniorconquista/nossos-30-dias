@@ -308,7 +308,7 @@ function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.c
 
 // Cole aqui o firebaseConfig do seu projeto (Console do Firebase > Configurações do projeto > Seus apps).
 // Enquanto estiver null, o site salva só neste aparelho.
-var FB_CONFIG=null;
+var FB_CONFIG={apiKey:'AIzaSyAMyQNO88MKnn4Hw0x2uz2LSscje2t0S7M',authDomain:'nossos-30-dias-4x73r.firebaseapp.com',projectId:'nossos-30-dias-4x73r',storageBucket:'nossos-30-dias-4x73r.firebasestorage.app',messagingSenderId:'955432378278',appId:'1:955432378278:web:bc1f475f05f165478af967'};
 
 var ref=null,timer=null,pending=false,statusText='Salvo só neste aparelho';
 function setStatus(t){statusText=t;var el=document.getElementById('status');if(el)el.textContent=t;}

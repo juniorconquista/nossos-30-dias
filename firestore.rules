@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /casais/{id} {
+      allow get, create, update: if id.size() >= 20;
+      allow list, delete: if false;
+    }
+  }
+}
