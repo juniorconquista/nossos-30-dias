@@ -142,6 +142,8 @@ footer{margin-top:26px;color:var(--muted);font-size:.85rem;text-align:center}
 <body>
 <main id="app"></main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script id="app-state" type="application/json">{"names":{"a":"Ela","b":"Ele"},"prize":"","teamPrize":"","days":{},"updated":0}</script>
 <script id="app-script">
 (function(){
@@ -149,7 +151,8 @@ var START='2026-10-20',TOTAL=30,P=['a','b'];
 var embedded=JSON.parse(document.getElementById('app-state').textContent);
 var state=embedded;
 try{var loc=JSON.parse(localStorage.getItem('nossos30')||'null');if(loc&&loc.updated>(embedded.updated||0))state=loc;}catch(e){}
-state.days=state.days||{};state.names=state.names||{a:'Ela',b:'Ele'};state.prizes=state.prizes||{};state.custom=state.custom||[];
+function normalize(s){s.days=s.days||{};s.names=s.names||{a:'Ela',b:'Ele'};s.prizes=s.prizes||{};s.custom=s.custom||[];return s;}
+normalize(state);
 if(!document.getElementById('modal')){var md=document.createElement('div');md.id='modal';document.body.appendChild(md);}
 
 function parse(k){var p=k.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}
@@ -232,7 +235,7 @@ function render(){
   h+='<div class="field"><label for="prize">O que quem vencer ganha?</label><input id="prize" data-field="prize" maxlength="80" placeholder="Ex.: escolhe o passeio do fim de semana" value="'+esc(state.prize||'')+'"></div>';
   h+='<div class="field"><label for="tprize">E se os dois completarem tudo?</label><input id="tprize" data-field="teamPrize" maxlength="80" placeholder="Ex.: jantar especial juntos" value="'+esc(state.teamPrize||'')+'"></div>';
   h+='<div class="field"><label>Nomes</label><div class="names"><input aria-label="Primeiro nome" data-name="a" maxlength="20" value="'+esc(nm('a'))+'"><input aria-label="Segundo nome" data-name="b" maxlength="20" value="'+esc(nm('b'))+'"></div></div></section></div>';
-  h+='<footer id="status">'+statusText+'</footer>';
+  h+='<footer><span id="status">'+esc(statusText)+'</span>'+(ref?'<p class="tiny"><button class="add" data-share="1">Copiar link para o outro celular</button></p>':'')+'</footer>';
   document.getElementById('app').innerHTML=h;
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -303,34 +306,58 @@ function closeGift(){state.prizes[gift].seen=true;gift=null;document.getElementB
 var toastT;
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show')},2600);}
 
-var art=null,readOnly=false,timer=null,statusText='Salvo neste aparelho';
+// Cole aqui o firebaseConfig do seu projeto (Console do Firebase > Configurações do projeto > Seus apps).
+// Enquanto estiver null, o site salva só neste aparelho.
+var FB_CONFIG=null;
+
+var ref=null,timer=null,pending=false,statusText='Salvo só neste aparelho';
 function setStatus(t){statusText=t;var el=document.getElementById('status');if(el)el.textContent=t;}
-function buildDoc(){
-  var css=document.getElementById('app-style').textContent;
-  var js=document.getElementById('app-script').textContent;
-  var json=JSON.stringify(state).replace(/</g,'\\u003c');
-  var head=document.head.innerHTML.split('<style')[0];
-  return '<!doctype html>\n<html lang="pt-BR">\n<head>'+head+'<style id="app-style">'+css+'</style>\n</head>\n<body>\n<main id="app"></main>\n<div class="toast" id="toast" role="status" aria-live="polite"></div>\n<script id="app-state" type="application/json">'+json+'<\/script>\n<script id="app-script">'+js+'<\/script>\n</body>\n</html>';
+var CODE_RE=/^[a-z0-9]{20,}$/;
+function coupleCode(){
+  var c=(location.hash||'').slice(1).toLowerCase();
+  if(!CODE_RE.test(c)){try{c=localStorage.getItem('nossos30-code')||'';}catch(e){c='';}}
+  if(!CODE_RE.test(c)){var abc='abcdefghijkmnpqrstuvwxyz23456789',r=new Uint32Array(24);crypto.getRandomValues(r);c='';for(var i=0;i<24;i++)c+=abc[r[i]%abc.length];}
+  try{localStorage.setItem('nossos30-code',c);}catch(e){}
+  if(location.hash!=='#'+c)history.replaceState(null,'','#'+c);
+  return c;
 }
+function shareLink(){return location.origin+location.pathname+'#'+coupleCode();}
 function save(){
   state.updated=Date.now();
   try{localStorage.setItem('nossos30',JSON.stringify(state));}catch(e){}
-  if(art&&!readOnly){setStatus('Salvando…');clearTimeout(timer);timer=setTimeout(publishNow,1800);}
+  if(ref){pending=true;setStatus('Salvando…');clearTimeout(timer);timer=setTimeout(push,400);}
 }
-function publishNow(){
-  if(gift){timer=setTimeout(publishNow,1500);return;}
-  try{sessionStorage.setItem('n30-sel',String(sel));}catch(e){}
-  art.publish(buildDoc()).then(function(){setStatus('Salvo para os dois');}).catch(function(e){
-    var c=e&&e.code;
-    if(c==='not_writer'||c==='not_granted'){readOnly=true;setStatus('Você pode ver, mas as marcações ficam só neste aparelho.');}
-    else if(c==='conflict'){}
-    else setStatus('Não deu para salvar agora. A próxima marcação tenta de novo.');
-  });
+function push(){
+  var u=state.updated||0;
+  ref.set({state:JSON.stringify(state),updated:u}).then(function(){if((state.updated||0)===u){pending=false;setStatus('Salvo na nuvem ☁️');}})
+    .catch(function(){pending=false;setStatus('Sem conexão agora. Fica salvo aqui e sobe quando voltar.');});
 }
-if(window.claude&&window.claude.use){window.claude.use('artifact').then(function(a){if(a){art=a;setStatus('Tudo salvo');}}).catch(function(){});}
+function applyRemote(doc){
+  if(!doc.exists){push();return;}
+  var d=doc.data()||{};
+  if(pending||!d.state)return;
+  if(d.updated>(state.updated||0)){
+    try{state=normalize(JSON.parse(d.state));}catch(e){return;}
+    try{localStorage.setItem('nossos30',JSON.stringify(state));}catch(e){}
+    var a=document.activeElement;
+    if(!gift&&!(a&&a.tagName==='INPUT')){render();showGift();}
+  } else if(d.updated<(state.updated||0)) push();
+  if(!doc.metadata.hasPendingWrites&&!doc.metadata.fromCache)setStatus('Salvo na nuvem ☁️');
+}
+if(FB_CONFIG&&window.firebase){
+  try{
+    firebase.initializeApp(FB_CONFIG);
+    var db=firebase.firestore();
+    db.enablePersistence({synchronizeTabs:true}).catch(function(){});
+    ref=db.collection('casais').doc(coupleCode());
+    statusText='Conectando…';
+    ref.onSnapshot({includeMetadataChanges:true},applyRemote,function(){setStatus('Não consegui falar com a nuvem. Salvando neste aparelho.');});
+  }catch(e){ref=null;statusText='Salvo só neste aparelho';}
+}
 
 document.addEventListener('click',function(e){
   var t=e.target.closest('button');if(!t)return;
+  if(t.dataset.share){var l=shareLink();if(navigator.share)navigator.share({title:'Nossos 30 dias',url:l}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(l).then(function(){toast('Link copiado! Abra no outro celular 📲');});return;}
   if(t.id==='openGift'){revealGift();return;}
   if(t.id==='keepGift'){closeGift();return;}
   if(t.dataset.use){var x=state.prizes[t.dataset.use];x.used=!x.used;render();save();return;}
