@@ -235,7 +235,7 @@ function render(){
   h+='<div class="field"><label for="prize">O que quem vencer ganha?</label><input id="prize" data-field="prize" maxlength="80" placeholder="Ex.: escolhe o passeio do fim de semana" value="'+esc(state.prize||'')+'"></div>';
   h+='<div class="field"><label for="tprize">E se os dois completarem tudo?</label><input id="tprize" data-field="teamPrize" maxlength="80" placeholder="Ex.: jantar especial juntos" value="'+esc(state.teamPrize||'')+'"></div>';
   h+='<div class="field"><label>Nomes</label><div class="names"><input aria-label="Primeiro nome" data-name="a" maxlength="20" value="'+esc(nm('a'))+'"><input aria-label="Segundo nome" data-name="b" maxlength="20" value="'+esc(nm('b'))+'"></div></div></section></div>';
-  h+='<footer><span id="status">'+esc(statusText)+'</span>'+(ref?'<p class="tiny"><button class="add" data-share="1">Copiar link para o outro celular</button></p>':'')+'</footer>';
+  h+='<footer><span id="status">'+esc(statusText)+'</span>'+'</footer>';
   document.getElementById('app').innerHTML=h;
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -312,16 +312,9 @@ var FB_CONFIG={apiKey:'AIzaSyAMyQNO88MKnn4Hw0x2uz2LSscje2t0S7M',authDomain:'noss
 
 var ref=null,timer=null,pending=false,statusText='Salvo só neste aparelho';
 function setStatus(t){statusText=t;var el=document.getElementById('status');if(el)el.textContent=t;}
-var CODE_RE=/^[a-z0-9]{20,}$/;
-function coupleCode(){
-  var c=(location.hash||'').slice(1).toLowerCase();
-  if(!CODE_RE.test(c)){try{c=localStorage.getItem('nossos30-code')||'';}catch(e){c='';}}
-  if(!CODE_RE.test(c)){var abc='abcdefghijkmnpqrstuvwxyz23456789',r=new Uint32Array(24);crypto.getRandomValues(r);c='';for(var i=0;i<24;i++)c+=abc[r[i]%abc.length];}
-  try{localStorage.setItem('nossos30-code',c);}catch(e){}
-  if(location.hash!=='#'+c)history.replaceState(null,'','#'+c);
-  return c;
-}
-function shareLink(){return location.origin+location.pathname+'#'+coupleCode();}
+// Cofre único do casal: os dois celulares leem e gravam neste mesmo documento.
+var COFRE='8qxhx2s53sqoov7ic04p9fhk';
+if(location.hash)history.replaceState(null,'',location.pathname);
 function save(){
   state.updated=Date.now();
   try{localStorage.setItem('nossos30',JSON.stringify(state));}catch(e){}
@@ -349,7 +342,7 @@ if(FB_CONFIG&&window.firebase){
     firebase.initializeApp(FB_CONFIG);
     var db=firebase.firestore();
     db.enablePersistence({synchronizeTabs:true}).catch(function(){});
-    ref=db.collection('casais').doc(coupleCode());
+    ref=db.collection('casais').doc(COFRE);
     statusText='Conectando…';
     ref.onSnapshot({includeMetadataChanges:true},applyRemote,function(){setStatus('Não consegui falar com a nuvem. Salvando neste aparelho.');});
   }catch(e){ref=null;statusText='Salvo só neste aparelho';}
@@ -357,7 +350,6 @@ if(FB_CONFIG&&window.firebase){
 
 document.addEventListener('click',function(e){
   var t=e.target.closest('button');if(!t)return;
-  if(t.dataset.share){var l=shareLink();if(navigator.share)navigator.share({title:'Nossos 30 dias',url:l}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(l).then(function(){toast('Link copiado! Abra no outro celular 📲');});return;}
   if(t.id==='openGift'){revealGift();return;}
   if(t.id==='keepGift'){closeGift();return;}
   if(t.dataset.use){var x=state.prizes[t.dataset.use];x.used=!x.used;render();save();return;}

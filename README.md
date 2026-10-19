@@ -4,9 +4,7 @@ Site do desafio de 30 dias: https://juniorconquista.github.io/nossos-30-dias/
 
 ## Onde os dados ficam salvos
 
-As marcações ficam salvas no Firebase Firestore, no documento `casais/<código>`. O código do casal vai no fim do link, depois do `#`, e não está neste repositório: só quem tem o link completo consegue ler ou mudar os dados. O `localStorage` de cada aparelho fica como cópia para quando estiver sem internet.
-
-Se o `FB_CONFIG` no `index.html` estiver `null`, o site salva só no aparelho.
+As marcações ficam no Firebase Firestore, num cofre único do casal: o documento `casais/<COFRE>`, definido no `index.html`. Os dois celulares abrem o mesmo endereço e caem sempre no mesmo cofre. As regras do Firestore só deixam ler e gravar esse documento (não dá para listar, apagar nem criar outros). O `localStorage` de cada aparelho fica como cópia para quando estiver sem internet.
 
 ## Firebase
 
@@ -20,4 +18,4 @@ npx firebase-tools deploy --only firestore:rules
 
 ## Primeiro uso
 
-Abra o site em um celular. O endereço vai ganhar um `#código` no final. Toque em **Copiar link para o outro celular** (no rodapé) e abra esse link no outro aparelho. A partir daí, os dois veem o mesmo placar e o mesmo baú.
+É só abrir https://juniorconquista.github.io/nossos-30-dias/ nos dois celulares. Não precisa de link especial nem de código.
