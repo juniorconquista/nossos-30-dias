@@ -174,26 +174,26 @@ function editable(i){return i<=todayIdx;}
 function lastIdx(){return Math.min(todayIdx,TOTAL-1);}
 
 function dailyCount(i,p){var g=get(i,p);return(g.refri?1:0)+(g.doce?1:0);}
-function dayPoints(i,p){var g=get(i,p),t=0;if(g.refri)t+=1;if(g.doce)t+=1;if(g.jejum)t+=2;
+function dayPoints(i,p){var g=get(i,p),t=0;if(g.refri)t+=1;if(g.doce)t+=1;if(g.delivery)t+=1;if(g.jejum)t+=2;
   if(g.treino==='forca')t+=2;else if(g.treino==='aerobico'||g.treino==='ambos')t+=3;return t;}
 function weekStats(w,p){var j=0,tr=0,ae=0;for(var i=w*7;i<Math.min(w*7+7,TOTAL);i++){var g=get(i,p);if(g.jejum)j++;if(g.treino)tr++;if(g.treino==='aerobico'||g.treino==='ambos')ae++;}
   return{j:j,tr:tr,ae:ae,done:w<4&&j>=3&&tr>=3&&ae>=1};}
 function points(p){var t=0;for(var i=0;i<TOTAL;i++)t+=dayPoints(i,p);for(var w=0;w<4;w++)if(weekStats(w,p).done)t+=5;return t;}
 function streak(p,test){var end=lastIdx();if(end<0)return 0;var i=end;if(!test(get(i,p)))i--;var c=0;while(i>=0&&test(get(i,p))){c++;i--;}return c;}
 function longest(p,test){var best=0,c=0;for(var i=0;i<=lastIdx();i++){if(test(get(i,p))){c++;if(c>best)best=c;}else c=0;}return best;}
-var noRefri=function(g){return!!g.refri},noDoce=function(g){return!!g.doce},both=function(g){return g.refri&&g.doce};
+var noRefri=function(g){return!!g.refri},noDoce=function(g){return!!g.doce},noDelivery=function(g){return!!g.delivery},both=function(g){return g.refri&&g.doce};
 
 function cellBg(i){var c={a:['var(--empty)','var(--a-soft)','var(--a)'],b:['var(--empty)','var(--b-soft)','var(--b)']};
   return 'linear-gradient(135deg,'+c.a[dailyCount(i,'a')]+' 0 50%,'+c.b[dailyCount(i,'b')]+' 50% 100%)';}
-function cellIcons(i){var s='',anyJ=false,anyT=false;P.forEach(function(p){var g=get(i,p);if(g.jejum)anyJ=true;if(g.treino)anyT=true;});
-  if(anyJ)s+='⏱';if(anyT)s+='💪';return s;}
+function cellIcons(i){var s='',anyD=false,anyJ=false,anyT=false;P.forEach(function(p){var g=get(i,p);if(g.delivery)anyD=true;if(g.jejum)anyJ=true;if(g.treino)anyT=true;});
+  if(anyD)s+='🛵';if(anyJ)s+='⏱';if(anyT)s+='💪';return s;}
 
 function render(){
   var pa=points('a'),pb=points('b');
   var lead=pa===pb?(pa===0?'Placar zerado. Que comece o jogo!':'Empate! Ninguém escorrega.'):(pa>pb?esc(nm('a')):esc(nm('b')))+' lidera por '+Math.abs(pa-pb)+(Math.abs(pa-pb)===1?' ponto':' pontos');
   var dayLine=todayIdx<0?'Começa amanhã, dia 20 de outubro.':(todayIdx>=TOTAL?'Desafio concluído. Que orgulho!':'Hoje é o dia '+(todayIdx+1)+' de 30.');
   var h='';
-  h+='<header class="top"><div><h1>Nossos 30 dias</h1><p class="sub">Sem refri, sem doce, jejum e treino, de 20 de outubro a 18 de novembro. '+dayLine+'</p></div>';
+  h+='<header class="top"><div><h1>Nossos 30 dias</h1><p class="sub">Sem refri, sem doce, sem delivery, jejum e treino, de 20 de outubro a 18 de novembro. '+dayLine+'</p></div>';
   h+='<div class="score">'+whoBlock('a',pa)+'<div class="vs">×</div>'+whoBlock('b',pb)+'<p class="lead">'+lead+'</p></div></header>';
 
   h+='<section class="board" aria-label="Calendário dos 30 dias">';
@@ -207,7 +207,7 @@ function render(){
     }
     h+='</div></div>';
   }
-  h+='<p class="legend">Metade <b class="a">'+esc(nm('a'))+'</b>, metade <b class="b">'+esc(nm('b'))+'</b>. Cor forte: sem refri e sem doce no dia. Cor clara: só um dos dois. ⏱ teve jejum, 💪 teve treino.</p></section>';
+  h+='<p class="legend">Metade <b class="a">'+esc(nm('a'))+'</b>, metade <b class="b">'+esc(nm('b'))+'</b>. Cor forte: sem refri e sem doce no dia. Cor clara: só um dos dois. 🛵 sem delivery, ⏱ teve jejum, 💪 teve treino.</p></section>';
 
   var dd=parse(days[sel]),ed=editable(sel),w=Math.floor(sel/7);
   h+='<section class="day"><div class="dayhead"><div><h2>Dia '+(sel+1)+'</h2><p class="lock">'+cap(fmtLong.format(dd))+'</p></div><div class="nav"><button data-nav="-1" aria-label="Dia anterior"'+(sel===0?' disabled':'')+'>‹</button><button data-nav="1" aria-label="Próximo dia"'+(sel===TOTAL-1?' disabled':'')+'>›</button></div></div>';
@@ -216,7 +216,7 @@ function render(){
   P.forEach(function(p){
     var g=get(sel,p),dis=ed?'':' disabled';
     h+='<div class="person '+p+'"><h3>'+esc(nm(p))+'</h3><div class="tgs">';
-    h+=tg(p,'refri','🥤 Sem refrigerante',g.refri,dis)+tg(p,'doce','🍫 Sem doce',g.doce,dis)+tg(p,'jejum','⏱ Jejum de 16h',g.jejum,dis);
+    h+=tg(p,'refri','🥤 Sem refrigerante',g.refri,dis)+tg(p,'doce','🍫 Sem doce',g.doce,dis)+tg(p,'delivery','🛵 Sem delivery',g.delivery,dis)+tg(p,'jejum','⏱ Jejum de 16h',g.jejum,dis);
     h+='</div><p class="lbl">Atividade física</p><div class="seg" role="group" aria-label="Atividade de '+esc(nm(p))+'">';
     [['','Não treinei'],['forca','Força'],['aerobico','Aeróbico'],['ambos','Força + aeróbico']].forEach(function(o){
       h+='<button data-p="'+p+'" data-treino="'+o[0]+'" aria-pressed="'+((g.treino||'')===o[0])+'"'+dis+'>'+o[1]+'</button>';});
@@ -231,7 +231,7 @@ function render(){
 
   h+=chest();
   h+='<div class="two"><section class="box"><h2>Conquistas</h2><div class="badges">'+badges()+'</div></section>';
-  h+='<section class="box"><h2>Como pontuar</h2><div class="rules"><span><b>+1</b> dia sem refrigerante</span><span><b>+1</b> dia sem doce</span><span><b>+2</b> jejum de 16h</span><span><b>+2</b> treino de força, <b>+3</b> com aeróbico</span><span><b>+5</b> semana completa (3 jejuns, 3 treinos, 1 aeróbico)</span><span>Escorregou? A sequência volta para zero, mas pontos e prêmios já ganhos ficam. Dia sem marcação conta como escorregão.</span></div>';
+  h+='<section class="box"><h2>Como pontuar</h2><div class="rules"><span><b>+1</b> dia sem refrigerante</span><span><b>+1</b> dia sem doce</span><span><b>+1</b> dia sem delivery</span><span><b>+2</b> jejum de 16h</span><span><b>+2</b> treino de força, <b>+3</b> com aeróbico</span><span><b>+5</b> semana completa (3 jejuns, 3 treinos, 1 aeróbico)</span><span>Escorregou? A sequência volta para zero, mas pontos e prêmios já ganhos ficam. Dia sem marcação conta como escorregão.</span></div>';
   h+='<div class="field"><label for="prize">O que quem vencer ganha?</label><input id="prize" data-field="prize" maxlength="80" placeholder="Ex.: escolhe o passeio do fim de semana" value="'+esc(state.prize||'')+'"></div>';
   h+='<div class="field"><label for="tprize">E se os dois completarem tudo?</label><input id="tprize" data-field="teamPrize" maxlength="80" placeholder="Ex.: jantar especial juntos" value="'+esc(state.teamPrize||'')+'"></div>';
   h+='<div class="field"><label>Nomes</label><div class="names"><input aria-label="Primeiro nome" data-name="a" maxlength="20" value="'+esc(nm('a'))+'"><input aria-label="Segundo nome" data-name="b" maxlength="20" value="'+esc(nm('b'))+'"></div></div></section></div>';
@@ -239,7 +239,7 @@ function render(){
   document.getElementById('app').innerHTML=h;
 }
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
-function whoBlock(p,pts){return '<div class="who '+p+'"><div class="nm">'+esc(nm(p))+'</div><div class="pts">'+pts+'</div><div class="streaks"><span title="Dias seguidos sem refrigerante">🥤 '+streak(p,noRefri)+' seguidos</span><span title="Dias seguidos sem doce">🍫 '+streak(p,noDoce)+' seguidos</span></div></div>';}
+function whoBlock(p,pts){return '<div class="who '+p+'"><div class="nm">'+esc(nm(p))+'</div><div class="pts">'+pts+'</div><div class="streaks"><span title="Dias seguidos sem refrigerante">🥤 '+streak(p,noRefri)+' seguidos</span><span title="Dias seguidos sem doce">🍫 '+streak(p,noDoce)+' seguidos</span><span title="Dias seguidos sem delivery">🛵 '+streak(p,noDelivery)+' seguidos</span></div></div>';}
 function tg(p,f,label,on,dis){return '<button class="tg" data-p="'+p+'" data-f="'+f+'" aria-pressed="'+(!!on)+'"'+dis+'><span class="chk">'+(on?'✓':'')+'</span>'+label+'</button>';}
 function meter(l,v,max){var d='';for(var i=0;i<max;i++)d+='<span class="dot'+(i<v?' on':'')+'"></span>';return '<div class="meter"><span>'+l+' '+Math.min(v,max)+'/'+max+'</span><span class="dots">'+d+'</span></div>';}
 function badges(){
@@ -247,6 +247,7 @@ function badges(){
     ['🌱','Primeiro dia','Um dia sem refri e sem doce',function(p){return longest(p,both)>=1}],
     ['🥤','7 dias sem refri','Uma semana seguida',function(p){return longest(p,noRefri)>=7}],
     ['🍫','7 dias sem doce','Uma semana seguida',function(p){return longest(p,noDoce)>=7}],
+    ['🛵','7 dias sem delivery','Uma semana seguida',function(p){return longest(p,noDelivery)>=7}],
     ['⭐','Semana completa','Jejum, treino e aeróbico em dia',function(p){for(var w=0;w<4;w++)if(weekStats(w,p).done)return true;return false}],
     ['🔥','15 dias limpos','Sem refri e sem doce, seguidos',function(p){return longest(p,both)>=15}],
     ['🏆','30 dias limpos','O desafio inteiro',function(p){return longest(p,both)>=30}]
@@ -269,7 +270,8 @@ var POOL={
 var MS=[
  {id:'limpo3',tier:'p',txt:'3 dias seguidos sem refri e sem doce',test:function(p){return longest(p,both)>=3}},
  {id:'refri7',tier:'p',txt:'7 dias seguidos sem refrigerante',test:function(p){return longest(p,noRefri)>=7}},
- {id:'doce7',tier:'p',txt:'7 dias seguidos sem doce',test:function(p){return longest(p,noDoce)>=7}}
+ {id:'doce7',tier:'p',txt:'7 dias seguidos sem doce',test:function(p){return longest(p,noDoce)>=7}},
+ {id:'delivery7',tier:'p',txt:'7 dias seguidos sem delivery',test:function(p){return longest(p,noDelivery)>=7}}
 ];
 var MSD=[];
 [0,1,2,3].forEach(function(w){
