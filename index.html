@@ -147,7 +147,7 @@ footer{margin-top:26px;color:var(--muted);font-size:.85rem;text-align:center}
 <script id="app-state" type="application/json">{"names":{"a":"Ela","b":"Ele"},"prize":"","teamPrize":"","days":{},"updated":0}</script>
 <script id="app-script">
 (function(){
-var START='2026-10-20',TOTAL=30,P=['a','b'];
+var START='2026-09-28',TOTAL=52,WEEKS=Math.floor(TOTAL/7),ROWS=Math.ceil(TOTAL/7),P=['a','b'];
 var embedded=JSON.parse(document.getElementById('app-state').textContent);
 var state=embedded;
 try{var loc=JSON.parse(localStorage.getItem('nossos30')||'null');if(loc&&loc.updated>(embedded.updated||0))state=loc;}catch(e){}
@@ -177,8 +177,8 @@ function dailyCount(i,p){var g=get(i,p);return(g.refri?1:0)+(g.doce?1:0);}
 function dayPoints(i,p){var g=get(i,p),t=0;if(g.refri)t+=1;if(g.doce)t+=1;if(g.delivery)t+=1;if(g.jejum)t+=2;
   if(g.treino==='forca')t+=2;else if(g.treino==='aerobico'||g.treino==='ambos')t+=3;return t;}
 function weekStats(w,p){var j=0,tr=0,ae=0;for(var i=w*7;i<Math.min(w*7+7,TOTAL);i++){var g=get(i,p);if(g.jejum)j++;if(g.treino)tr++;if(g.treino==='aerobico'||g.treino==='ambos')ae++;}
-  return{j:j,tr:tr,ae:ae,done:w<4&&j>=3&&tr>=3&&ae>=1};}
-function points(p){var t=0;for(var i=0;i<TOTAL;i++)t+=dayPoints(i,p);for(var w=0;w<4;w++)if(weekStats(w,p).done)t+=5;return t;}
+  return{j:j,tr:tr,ae:ae,done:w<WEEKS&&j>=3&&tr>=3&&ae>=1};}
+function points(p){var t=0;for(var i=0;i<TOTAL;i++)t+=dayPoints(i,p);for(var w=0;w<WEEKS;w++)if(weekStats(w,p).done)t+=5;return t;}
 function streak(p,test){var end=lastIdx();if(end<0)return 0;var i=end;if(!test(get(i,p)))i--;var c=0;while(i>=0&&test(get(i,p))){c++;i--;}return c;}
 function longest(p,test){var best=0,c=0;for(var i=0;i<=lastIdx();i++){if(test(get(i,p))){c++;if(c>best)best=c;}else c=0;}return best;}
 var noRefri=function(g){return!!g.refri},noDoce=function(g){return!!g.doce},noDelivery=function(g){return!!g.delivery},both=function(g){return g.refri&&g.doce};
@@ -191,15 +191,15 @@ function cellIcons(i){var s='',anyD=false,anyJ=false,anyT=false;P.forEach(functi
 function render(){
   var pa=points('a'),pb=points('b');
   var lead=pa===pb?(pa===0?'Placar zerado. Que comece o jogo!':'Empate! Ninguém escorrega.'):(pa>pb?esc(nm('a')):esc(nm('b')))+' lidera por '+Math.abs(pa-pb)+(Math.abs(pa-pb)===1?' ponto':' pontos');
-  var dayLine=todayIdx<0?'Começa amanhã, dia 20 de outubro.':(todayIdx>=TOTAL?'Desafio concluído. Que orgulho!':'Hoje é o dia '+(todayIdx+1)+' de 30.');
+  var dayLine=todayIdx<0?'Começa em 28 de setembro.':(todayIdx>=TOTAL?'Desafio concluído. Que orgulho!':'Hoje é o dia '+(todayIdx+1)+' de '+TOTAL+'.');
   var h='';
-  h+='<header class="top"><div><h1>Nossos 30 dias</h1><p class="sub">Sem refri, sem doce, sem delivery, jejum e treino, de 20 de outubro a 18 de novembro. '+dayLine+'</p></div>';
+  h+='<header class="top"><div><h1>Nossos 30 dias</h1><p class="sub">Sem refri, sem doce, sem delivery, jejum e treino, de 28 de setembro a 18 de novembro. '+dayLine+'</p></div>';
   h+='<div class="score">'+whoBlock('a',pa)+'<div class="vs">×</div>'+whoBlock('b',pb)+'<p class="lead">'+lead+'</p></div></header>';
 
-  h+='<section class="board" aria-label="Calendário dos 30 dias">';
-  for(var w=0;w<5;w++){
+  h+='<section class="board" aria-label="Calendário do desafio">';
+  for(var w=0;w<ROWS;w++){
     var a=w*7,b=Math.min(a+7,TOTAL);
-    h+='<div class="week"><span class="wk">'+(w<4?'Semana '+(w+1):'Reta final')+'</span><div class="cells">';
+    h+='<div class="week"><span class="wk">'+(w<WEEKS?'Semana '+(w+1):'Reta final')+'</span><div class="cells">';
     for(var i=a;i<b;i++){
       var cls='cell'+(i>todayIdx?' future':'')+(i===todayIdx?' today':'')+(i===sel?' sel':'');
       var d=parse(days[i]);
@@ -221,7 +221,7 @@ function render(){
     [['','Não treinei'],['forca','Força'],['aerobico','Aeróbico'],['ambos','Força + aeróbico']].forEach(function(o){
       h+='<button data-p="'+p+'" data-treino="'+o[0]+'" aria-pressed="'+((g.treino||'')===o[0])+'"'+dis+'>'+o[1]+'</button>';});
     h+='</div>';
-    if(w<4){var ws=weekStats(w,p);
+    if(w<WEEKS){var ws=weekStats(w,p);
       h+='<div class="weekly"><p class="lbl" style="margin-top:0">Semana '+(w+1)+(ws.done?' <span class="done">✓ completa, +5</span>':'')+'</p>';
       h+=meter('Jejum 16h',ws.j,3)+meter('Dias de treino',ws.tr,3)+meter('Aeróbico',ws.ae,1)+'</div>';
     } else h+='<div class="weekly"><p class="lbl" style="margin-top:0">Reta final: só os dias contam. Fechem com tudo!</p></div>';
@@ -248,14 +248,14 @@ function badges(){
     ['🥤','7 dias sem refri','Uma semana seguida',function(p){return longest(p,noRefri)>=7}],
     ['🍫','7 dias sem doce','Uma semana seguida',function(p){return longest(p,noDoce)>=7}],
     ['🛵','7 dias sem delivery','Uma semana seguida',function(p){return longest(p,noDelivery)>=7}],
-    ['⭐','Semana completa','Jejum, treino e aeróbico em dia',function(p){for(var w=0;w<4;w++)if(weekStats(w,p).done)return true;return false}],
+    ['⭐','Semana completa','Jejum, treino e aeróbico em dia',function(p){for(var w=0;w<WEEKS;w++)if(weekStats(w,p).done)return true;return false}],
     ['🔥','15 dias limpos','Sem refri e sem doce, seguidos',function(p){return longest(p,both)>=15}],
-    ['🏆','30 dias limpos','O desafio inteiro',function(p){return longest(p,both)>=30}]
+    ['🏆','30 dias limpos','30 dias seguidos',function(p){return longest(p,both)>=30}]
   ];
   var h='';
   list.forEach(function(b){var who=P.filter(function(p){return b[3](p)}).map(nm);
     h+='<div class="bd'+(who.length?' got':'')+'"><span class="e">'+b[0]+'</span><span class="t">'+b[1]+'</span><span class="w">'+(who.length?esc(who.join(' e ')):b[2])+'</span></div>';});
-  var duo=false;for(var w=0;w<4;w++)if(weekStats(w,'a').done&&weekStats(w,'b').done)duo=true;
+  var duo=false;for(var w=0;w<WEEKS;w++)if(weekStats(w,'a').done&&weekStats(w,'b').done)duo=true;
   h+='<div class="bd'+(duo?' got':'')+'"><span class="e">💞</span><span class="t">Dupla em sintonia</span><span class="w">'+(duo?'Os dois completaram a mesma semana':'Completem a mesma semana juntos')+'</span></div>';
   return h;
 }
@@ -274,7 +274,7 @@ var MS=[
  {id:'delivery7',tier:'p',txt:'7 dias seguidos sem delivery',test:function(p){return longest(p,noDelivery)>=7}}
 ];
 var MSD=[];
-[0,1,2,3].forEach(function(w){
+Array.from({length:WEEKS},function(_,w){return w}).forEach(function(w){
  MS.push({id:'semana'+(w+1),tier:'m',txt:'a semana '+(w+1)+' completa',test:function(p){return weekStats(w,p).done}});
  MSD.push({id:'duo'+(w+1),tier:'t',txt:'a semana '+(w+1)+' completa, os dois juntos',test:function(){return weekStats(w,'a').done&&weekStats(w,'b').done}});
 });
@@ -360,11 +360,11 @@ document.addEventListener('click',function(e){
   if(t.dataset.nav){sel=Math.max(0,Math.min(TOTAL-1,sel+ +t.dataset.nav));render();return;}
   if(!editable(sel))return;
   var p=t.dataset.p;if(!p)return;
-  var w=Math.floor(sel/7),before=w<4&&weekStats(w,p).done;
+  var w=Math.floor(sel/7),before=w<WEEKS&&weekStats(w,p).done;
   if(t.dataset.f){var f=t.dataset.f,v=!get(sel,p)[f];setv(sel,p,f,v);
     if(v&&(f==='refri'||f==='doce')){var g=get(sel,p);if(g.refri&&g.doce)toast('Dia limpo para '+nm(p)+'! 🎉');}}
   else if(t.dataset.treino!==undefined){setv(sel,p,'treino',t.dataset.treino);}
-  if(w<4&&!before&&weekStats(w,p).done)toast(nm(p)+' completou a semana '+(w+1)+'! +5 ⭐');
+  if(w<WEEKS&&!before&&weekStats(w,p).done)toast(nm(p)+' completou a semana '+(w+1)+'! +5 ⭐');
   var nw=checkMilestones();render();save();if(nw)showGift();
 });
 document.addEventListener('change',function(e){
