@@ -400,6 +400,17 @@ document.addEventListener('change',function(e){
   else if(t.dataset.name){state.names[t.dataset.name]=t.value.trim()||(t.dataset.name==='a'?'Ela':'Ele');render();save();}
 });
 render();showGift();
+
+// O navegador guarda a página em cache; se o GitHub tiver uma versão mais nova, troca por ela.
+var VERSAO='2026-11-10';
+function checarVersao(){
+  fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
+    var m=t.match(/var VERSAO='([^']+)'/);
+    if(m&&m[1]!==VERSAO&&!gift)location.replace(location.pathname+'?v='+m[1]);
+  }).catch(function(){});
+}
+checarVersao();
+document.addEventListener('visibilitychange',function(){if(!document.hidden)checarVersao();});
 })();
 </script>
 </body>
